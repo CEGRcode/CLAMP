@@ -124,13 +124,12 @@ class GreedyCluster:
         self.merged_from = merged_from
 
 class GreedyEngine:
-    def __init__(self, items: List[GreedyItem], alphabet_length: int = 4, pc: np.ndarray = np.ones(4),
+    def __init__(self, items: List[GreedyItem], pc: np.ndarray = np.ones(4),
                  min_information_overlap: float = 8., max_information_overhang: float = 12.,
                  concentration: float = 1.):
         self.items = items
-        self.alphabet_length = alphabet_length
         self.clusters = [GreedyCluster(idx, [item], item.pwm.reshape(1, *item.pwm.shape), 0., None)
-                         for idx, item in enumerate(items) if item.pwm.shape[1] == alphabet_length]
+                         for idx, item in enumerate(items) if item.pwm.shape[1] == len(pc)]
         
         self.pc = np.array(pc)
         self.lgpc = loggamma(self.pc)
