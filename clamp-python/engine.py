@@ -50,7 +50,6 @@ def compute_maximal_llr(aligned_pwms1: np.ndarray, bits1: np.ndarray, min_bits1:
     min_width = min(width1, width2)
     
     maximal_llr = -np.inf
-    maximal_weighted_llr = -np.inf
     aligned_pwms = np.zeros((0, 0, 0), dtype=np.float64)
 
     for i in range(width1 + width2 - 1):
