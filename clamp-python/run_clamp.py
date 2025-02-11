@@ -49,11 +49,6 @@ if __name__ == '__main__':
     parser.add_argument('--output-dest', '-o', default='clamp_out', help='Folder to save results, will be created if it does not exist')
     args = parser.parse_args()
 
-    if not os.path.exists(args.output_dest):
-        os.makedirs(args.output_dest)
-    if not os.path.exists('{}/svgs'.format(args.output_dest)):
-        os.mkdir('{}/svgs'.format(args.output_dest))
-
     if args.meme:
         if args.meme_list:
             print('Warning: both --meme and --meme-list specified, ignoring --meme-list')
@@ -63,6 +58,11 @@ if __name__ == '__main__':
             meme_files = [line.strip() for line in f]
     else:
         parser.error('Either --meme or --meme-list must be specified')
+
+    if not os.path.exists(args.output_dest):
+        os.makedirs(args.output_dest)
+    if not os.path.exists('{}/svgs'.format(args.output_dest)):
+        os.mkdir('{}/svgs'.format(args.output_dest))
     
     items, sources = parse_meme_files(meme_files, args.nsites_thresh, args.evalue_thresh)
     engine = GreedyEngine(items, pc=args.pc, min_information_overlap=args.min_information_overlap,
