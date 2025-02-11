@@ -55,7 +55,7 @@ if __name__ == '__main__':
         meme_files = args.meme
     elif args.meme_list:
         with open(args.meme_list, 'r') as f:
-            meme_files = [line.strip() for line in f]
+            meme_files = [line.strip() for line in f.read().strip().split('\n')]
     else:
         parser.error('Either --meme or --meme-list must be specified')
 
