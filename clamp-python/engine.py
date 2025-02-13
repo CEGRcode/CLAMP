@@ -33,7 +33,7 @@ def compute_llr(aligned_pwms: np.ndarray, pc: np.ndarray, lgpc: np.ndarray, pc_s
 
     return llr
 
-@jit(nb.types.Tuple((float64, float64[:, :, :], float64))(float64[:, :, :], float64[:], float64[:],
+@jit(nb.types.Tuple((float64[:, :, :], float64, float64, float64))(float64[:, :, :], float64[:], float64[:],
     float64, float64[:, :, :], float64[:], float64[:], float64, float64[:], float64[:], float64,
     float64, float64, float64, float64), nopython=True, nogil=True)
 def compute_maximal_llr(aligned_pwms1: np.ndarray, bits1: np.ndarray, min_bits1: np.ndarray, llr1: float,
@@ -92,7 +92,9 @@ def compute_maximal_llr(aligned_pwms1: np.ndarray, bits1: np.ndarray, min_bits1:
                 aligned_pwms = combined_pwms
 
     scaled_llr = maximal_llr * (n1 + n2) ** concentration
-    return scaled_llr, aligned_pwms, scaled_llr - llr1 - llr2
+    scaled_llr1 = llr1 * n1 ** concentration
+    scaled_llr2 = llr2 * n2 ** concentration
+    return aligned_pwms, maximal_llr, maximal_llr - llr1 - llr2, scaled_llr - scaled_llr1 - scaled_llr2
 
 class GreedyItem:
     def __init__(self, idx: int, pwm: np.ndarray):
@@ -169,8 +171,8 @@ class GreedyEngine:
             for c1, c2, results in executor.map(self.compute_llr_for_clusters,
                                                 *zip(*(all_combos - set(self.cache)))):
                 self.cache[(c1, c2)] = results
-        c1, c2 = max(self.cache, key=lambda k: self.cache[k][2])
-        llr, aligned_pwms, _ = self.cache[(c1, c2)]
+        c1, c2 = max(self.cache, key=lambda k: self.cache[k][3] if self.cache[k][2] >= 0 else -np.inf)
+        aligned_pwms, llr, _, _ = self.cache[(c1, c2)]
     
         if math.isinf(llr):
             return False
