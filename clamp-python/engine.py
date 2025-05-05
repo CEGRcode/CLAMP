@@ -4,7 +4,7 @@ from typing import List, Tuple, Union
 import math
 import itertools
 from concurrent.futures import ThreadPoolExecutor
-from numba import jit, float64
+from numba import jit, int64, float64
 import numba as nb
 import ctypes
 from numba.extending import overload, get_cython_function_address
@@ -31,8 +31,8 @@ def compute_llr(aligned_pwms: np.ndarray, pc: np.ndarray, lgpc: np.ndarray, pc_s
         complement_pwm += previous_pwm - current_pwm
         previous_pwm = current_pwm
         for j in range(width):
-            current_sum = sum(current_pwm[j, :])
-            complement_sum = sum(complement_pwm[j, :])
+            current_sum = np.sum(current_pwm[j, :])
+            complement_sum = np.sum(complement_pwm[j, :])
             llr += loggamma(current_sum + pc_sum) + loggamma(complement_sum + pc_sum) - \
                 loggamma(current_sum + complement_sum + pc_sum) - lga
             for b in range(alphabet_length):
@@ -43,14 +43,14 @@ def compute_llr(aligned_pwms: np.ndarray, pc: np.ndarray, lgpc: np.ndarray, pc_s
 
     return llr
 
-@jit(nb.types.Tuple((float64[:, :, :], float64, float64, float64))(float64[:, :, :], float64[:], float64[:],
+@jit(nb.types.Tuple((float64[:, :, :], float64, float64, float64, float64))(float64[:, :, :], float64[:], float64[:],
     float64, float64[:, :, :], float64[:], float64[:], float64, float64[:], float64[:], float64,
-    float64, float64, float64, float64), nopython=True, nogil=True)
+    float64, int64, float64, float64, float64), nopython=True, nogil=True)
 def compute_maximal_llr(aligned_pwms1: np.ndarray, bits1: np.ndarray, min_bits1: np.ndarray, llr1: float,
                         aligned_pwms2: np.ndarray, bits2: np.ndarray, min_bits2: np.ndarray, llr2: float,
                         pc: np.ndarray, lgpc: np.ndarray, pc_sum: float, lga: float,
-                        min_information_overlap: float, max_information_overhang: float,
-                        concentration: float):
+                        min_base_overlap: int, min_information_overlap: float,
+                        max_information_overhang: float, concentration: float):
     n1, width1, a = aligned_pwms1.shape
     n2, width2, a = aligned_pwms2.shape
     bits2_reverse = np.flip(bits2)
@@ -62,7 +62,7 @@ def compute_maximal_llr(aligned_pwms1: np.ndarray, bits1: np.ndarray, min_bits1:
     maximal_llr = -np.inf
     aligned_pwms = np.zeros((0, 0, 0), dtype=np.float64)
 
-    for i in range(width1 + width2 - 1):
+    for i in range(min_base_overlap - 1, width1 + width2 - min_base_overlap):
         start1 = max(i - width1 + 1, 0)
         start2 = max(width1 - i - 1, 0)
         overlap = min(i + 1, width1 + width2 - i - 1, min_width)
@@ -104,7 +104,7 @@ def compute_maximal_llr(aligned_pwms1: np.ndarray, bits1: np.ndarray, min_bits1:
     scaled_llr = maximal_llr * (n1 + n2) ** concentration
     scaled_llr1 = llr1 * n1 ** concentration
     scaled_llr2 = llr2 * n2 ** concentration
-    return aligned_pwms, maximal_llr, maximal_llr - llr1 - llr2, scaled_llr - scaled_llr1 - scaled_llr2
+    return aligned_pwms, maximal_llr, maximal_llr - llr1 - llr2, scaled_llr, scaled_llr - scaled_llr1 - scaled_llr2
 
 class GreedyItem:
     def __init__(self, idx: int, pwm: np.ndarray):
@@ -137,8 +137,8 @@ class GreedyCluster:
 
 class GreedyEngine:
     def __init__(self, items: List[GreedyItem], pc: np.ndarray = np.ones(4),
-                 min_information_overlap: float = 8., max_information_overhang: float = 12.,
-                 concentration: float = 1.):
+                 min_base_overlap: int = 4, min_information_overlap: float = 8.,
+                 max_information_overhang: float = 12., concentration: float = 1.):
         self.items = items
         self.clusters = [GreedyCluster(idx, [item], item.pwm.reshape(1, *item.pwm.shape), 0., None)
                          for idx, item in enumerate(items) if item.pwm.shape[1] == len(pc)]
@@ -147,7 +147,8 @@ class GreedyEngine:
         self.lgpc = loggamma(self.pc)
         self.pc_sum = np.sum(self.pc)
         self.lga = loggamma(self.pc_sum)
-        
+
+        self.min_base_overlap = min_base_overlap
         self.min_information_overlap = min_information_overlap
         self.max_information_overhang = max_information_overhang
         self.concentration = concentration
@@ -170,8 +171,8 @@ class GreedyEngine:
 
         return c1, c2, compute_maximal_llr(aligned_pwms1, bits1, min_bits1, llr1, aligned_pwms2, bits2,
                                            min_bits2, llr2, self.pc, self.lgpc, self.pc_sum, self.lga,
-                                           self.min_information_overlap, self.max_information_overhang,
-                                           self.concentration)
+                                           self.min_base_overlap, self.min_information_overlap,
+                                           self.max_information_overhang, self.concentration)
 
     def one_iteration(self, n_processes: Union[None, int] = None):
         current_clusters = list(self.clusters_trace[-1])
@@ -181,8 +182,8 @@ class GreedyEngine:
             for c1, c2, results in executor.map(self.compute_llr_for_clusters,
                                                 *zip(*(all_combos - set(self.cache)))):
                 self.cache[(c1, c2)] = results
-        c1, c2 = max(self.cache, key=lambda k: self.cache[k][3] if self.cache[k][2] >= 0 else -np.inf)
-        aligned_pwms, llr, _, _ = self.cache[(c1, c2)]
+        c1, c2 = max(self.cache, key=lambda k: self.cache[k][4] if self.cache[k][2] >= 0 else -np.inf)
+        aligned_pwms, llr, _, _, _ = self.cache[(c1, c2)]
     
         if math.isinf(llr):
             return False
