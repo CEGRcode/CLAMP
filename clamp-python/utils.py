@@ -1,6 +1,60 @@
 import numpy as np
 import xml.dom.minidom as dom
 from typing import Union
+from scipy.stats import pearsonr
+
+def highest_n_info_sum(pfm, n=4, w=3):
+    '''
+    Sum of the information content of the highest n windows of width w in a PFM
+    '''
+    pwm = pfm / np.sum(pfm, axis=1, keepdims=True)
+    logpwm = np.array(pwm)
+    logpwm[pwm > 0.] = np.log2(pwm[pwm > 0.])
+    bits = np.sum(pwm * logpwm, axis=1) + 2.
+    val = sum(bits[:w]) / w
+    mean_bits = [val]
+    for i in range(w, len(bits)):
+        val += (bits[i] - bits[i - w]) / w
+        mean_bits.append(val)
+    return sum(sorted(mean_bits, reverse=True)[:n])
+
+def check_periodicity(pfm, p=1):
+    '''
+    Periodicity score for a PFM based on the weighted Pearson correlation between
+    positions separated by p bases, weighted by the information content of the bases
+    '''
+    pwm = pfm / np.sum(pfm, axis=1, keepdims=True)
+    logpwm = np.array(pwm)
+    logpwm[pwm > 0.] = np.log2(pwm[pwm > 0.])
+    bits = np.sum(pwm * logpwm, axis=1) + 2.
+    w = pfm.shape[0]
+    per = []
+    total_bit_prod = 0
+    for i in range(p, w, p):
+        per = np.concatenate([per, pearsonr(pfm[i:, :].T, pfm[:-i, :].T)[0] * bits[i:] * bits[:-i]])
+        total_bit_prod += np.sum(bits[i:] * bits[:-i])
+    per[np.isnan(per)] = 0.
+    return np.sum(per) / total_bit_prod
+
+def filter_motifs(items, nsites_thresh=10, evalue_thresh=.01, info_score_thresh=5., periodicity1_thresh=.6,
+                  periodicity2_thresh=.75, periodicity3_thresh=.75):
+    '''
+    Filters a list of GreedyItems based on various QC thresholds
+    '''
+    new_items = []
+    for item in items:
+        nsites = item.source[1]
+        evalue = item.source[2]
+        pfm = item.pfm
+        info_score = highest_n_info_sum(pfm)
+        periodicity1 = check_periodicity(pfm, p=1)
+        periodicity2 = check_periodicity(pfm, p=2)
+        periodicity3 = check_periodicity(pfm, p=3)
+        if nsites >= nsites_thresh and evalue <= evalue_thresh and info_score >= info_score_thresh \
+           and periodicity1 <= periodicity1_thresh and periodicity2 <= periodicity2_thresh \
+           and periodicity3 <= periodicity3_thresh:
+            new_items.append(item)
+    return new_items
 
 def boltzmann(arr: np.ndarray, alpha: float, axis: Union[None, int, tuple] = None):
     '''

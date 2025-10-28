@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from engine import GreedyEngine
-from utils import trim_motif, plot_logo_stack
+from utils import trim_motif, plot_logo_stack, filter_motifs
 from input import parse_meme_files
 import argparse
 
@@ -10,7 +10,11 @@ if __name__ == '__main__':
     parser.add_argument('--meme', nargs='+', default=None, help='MEME files to process')
     parser.add_argument('--meme-list', default=None, help='File containing list of MEME files to process')
     parser.add_argument('--nsites-thresh', type=int, default=10, help='Minimum number of sites to consider a motif')
-    parser.add_argument('--evalue-thresh', type=float, default=.1, help='Maximum E-value to consider a motif')
+    parser.add_argument('--evalue-thresh', type=float, default=.01, help='Maximum E-value to consider a motif')
+    parser.add_argument('--info-score-thresh', type=float, default=5., help='Minimum information score to consider a motif')
+    parser.add_argument('--periodicity1-thresh', type=float, default=.6, help='Maximum periodicity (p=1) to consider a motif')
+    parser.add_argument('--periodicity2-thresh', type=float, default=.75, help='Maximum periodicity (p=2) to consider a motif')
+    parser.add_argument('--periodicity3-thresh', type=float, default=.75, help='Maximum periodicity (p=3) to consider a motif')
     parser.add_argument('--pc', nargs='+', type=float, default=[2., 2., 2., 2.], help='Alpha parameters for Dirichlet prior')
     parser.add_argument('--min-base-overlap', type=int, default=4, help='Minimum number of bases to overlap for merging')
     parser.add_argument('--min-information-overlap', type=float, default=0., help='Minimum information overlap for merging')
@@ -36,6 +40,9 @@ if __name__ == '__main__':
         os.makedirs(args.output_dest)
     
     items, sources, sites = parse_meme_files(meme_files, get_sites=args.get_sites)
+    items = filter_motifs(items, nsites_thresh=args.nsites_thresh, evalue_thresh=args.evalue_thresh,
+        info_score_thresh=args.info_score_thresh, periodicity1_thresh=args.periodicity1_thresh,
+        periodicity2_thresh=args.periodicity2_thresh, periodicity3_thresh=args.periodicity3_thresh)
     engine = GreedyEngine(items, pc=args.pc, min_base_overlap=args.min_base_overlap,
         min_information_overlap=args.min_information_overlap,
         max_information_overhang=args.max_information_overhang, concentration=args.concentration)
