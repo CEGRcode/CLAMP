@@ -3,7 +3,7 @@ import os
 from engine import GreedyEngine
 from utils import filter_motifs, trim_motif
 from input import parse_meme_files
-from output import write_aligned_transfac, write_consensus_transfac, plot_logo_stack
+from output import write_aligned_transfac, write_consensus_transfac, write_consensus_meme, plot_logo_stack
 import argparse
 
 if __name__ == '__main__':
@@ -63,6 +63,10 @@ if __name__ == '__main__':
         # Write the consensus PFM to a TRANSFAC file
         write_consensus_transfac(cluster, '{0}/cluster{1}/cluster{1}_consensus-motif.transfac'.format(args.output_dest, c),
                                  info_thresh=args.trim_thresh)
+        
+        # Write the consensus PFM to a MEME file
+        write_consensus_meme(cluster, '{0}/cluster{1}/cluster{1}_consensus-motif.meme'.format(args.output_dest, c),
+                             info_thresh=args.trim_thresh)
 
         # Plot the aligned PFMs as an SVG
         svg = plot_logo_stack(cluster.aligned_pfms)

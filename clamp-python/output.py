@@ -30,6 +30,18 @@ def write_consensus_transfac(cluster, filename, info_thresh=.5):
             f.write('{:02d}\t{:06f}\t{:06f}\t{:06f}\t{:06f}\n'.format(j + 1, *trimmed_pfm[j, :]))
         f.write('XX\n//\n')
 
+def write_consensus_meme(cluster, filename, info_thresh=.5):
+    c = cluster.idx
+    trimmed_pfm, _, _, _ = trim_motif(cluster.aligned_pfms, info_thresh)
+    with open(filename, 'w') as f:
+        f.write('MEME version 5\n')
+        f.write('ALPHABET= ACGT\n')
+        f.write('MOTIF {0} {0}\n'.format('cluster{}'.format(c)))
+        f.write('letter-probability matrix: alength= 4 w= {} nsites= {} E= 0\n'.format(
+            trimmed_pfm.shape[0], sum(item.source[1] for item in cluster.items)))
+        for j in range(trimmed_pfm.shape[0]):
+            f.write('{:06f} {:06f} {:06f} {:06f}\n'.format(*(trimmed_pfm[j, :] / np.sum(trimmed_pfm[j, :]))))
+
 clamp_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 with open('{}/logo_symbols/glyphs.json'.format(clamp_dir), 'r') as f:
     glyph_data = json.load(f)
