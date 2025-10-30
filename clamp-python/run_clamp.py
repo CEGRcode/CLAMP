@@ -1,7 +1,7 @@
 import numpy as np
 import os
 from engine import GreedyEngine
-from utils import filter_motifs
+from utils import filter_motifs, trim_motif
 from input import parse_meme_files
 from output import write_aligned_transfac, write_consensus_transfac, plot_logo_stack
 import argparse
@@ -22,7 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--max-information-overhang', type=float, default=12., help='Maximum information overhang for merging')
     parser.add_argument('--concentration', type=float, default=.5, help='Concentration parameter for merging')
     parser.add_argument('--n-workers', type=int, default=None, help='Number of workers to use for parallelization')
-    parser.add_argument('--info-thresh', type=float, default=.5, help='Information threshold for trimming motifs')
+    parser.add_argument('--trim-thresh', type=float, default=.5, help='Information threshold for trimming motifs')
     parser.add_argument('--get-sites', action='store_true', help='Whether to extract binding sites from MEME files')
     parser.add_argument('--output-dest', '-o', default='clamp_out', help='Folder to save results, will be created if it does not exist')
     args = parser.parse_args()
@@ -61,10 +61,16 @@ if __name__ == '__main__':
         write_aligned_transfac(cluster, '{0}/cluster{1}/cluster{1}_aligned-motifs.transfac'.format(args.output_dest, c))
 
         # Write the consensus PFM to a TRANSFAC file
-        write_consensus_transfac(cluster, '{0}/cluster{1}/cluster{1}_consensus-pfm.transfac'.format(args.output_dest, c),
-                                 info_thresh=args.info_thresh)
+        write_consensus_transfac(cluster, '{0}/cluster{1}/cluster{1}_consensus-motif.transfac'.format(args.output_dest, c),
+                                 info_thresh=args.trim_thresh)
 
         # Plot the aligned PFMs as an SVG
         svg = plot_logo_stack(cluster.aligned_pfms)
-        with open('{0}/cluster{1}/cluster{1}.svg'.format(args.output_dest, c), 'w') as f:
+        with open('{0}/cluster{1}/cluster{1}_aligned-motifs.svg'.format(args.output_dest, c), 'w') as f:
+            svg.writexml(f, addindent='\t', newl='\n')
+        
+        # Plot the consensus PFM as an SVG
+        trimmed_pfm, _, _, _ = trim_motif(cluster.aligned_pfms, info_thresh=args.trim_thresh)
+        svg = plot_logo_stack(np.expand_dims(trimmed_pfm, axis=0))
+        with open('{0}/cluster{1}/cluster{1}_consensus-motif.svg'.format(args.output_dest, c), 'w') as f:
             svg.writexml(f, addindent='\t', newl='\n')
