@@ -5,7 +5,7 @@ from math import isinf
 from itertools import combinations
 from concurrent.futures import ThreadPoolExecutor
 from numba import jit, boolean, int64, float64
-from numba.types import Tuple
+from numba.types import Tuple as NumbaTuple
 from ctypes import CFUNCTYPE, c_double
 from numba.extending import overload, get_cython_function_address
 from utils import boltzmann
@@ -48,7 +48,7 @@ def compute_llr(aligned_pfms: np.ndarray, pc: np.ndarray, lgpc: np.ndarray, pc_s
 
     return llr
 
-@jit(Tuple((float64[:, :, :], float64, float64, float64, float64, int64, int64, int64, int64, boolean))(
+@jit(NumbaTuple((float64[:, :, :], float64, float64, float64, float64, int64, int64, int64, int64, boolean))(
     float64[:, :, :], float64[:], float64[:], float64, float64[:, :, :], float64[:], float64[:],
     float64, float64[:], float64[:], float64, float64, int64, float64, float64, float64),
         nopython=True, nogil=True)
