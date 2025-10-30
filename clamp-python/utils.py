@@ -4,6 +4,7 @@ from typing import Union
 from scipy.stats import pearsonr
 import json
 from collections import namedtuple
+import os
 
 def highest_n_info_sum(pfm, n=4, w=3):
     '''
@@ -93,9 +94,10 @@ def trim_motif(aligned_pfms, info_thresh=.5, w=2):
     end = informative_bits[-1] + w
     return pfm[start:end, :], start, pfm.shape[0] - end, True
 
-with open('../logo_symbols/glyphs.json', 'r') as f:
+clamp_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+with open('{}/logo_symbols/glyphs.json'.format(clamp_dir), 'r') as f:
     glyph_data = json.load(f)
-with open('../logo_symbols/symbol_library.json', 'r') as f:
+with open('{}/logo_symbols/symbol_library.json'.format(clamp_dir), 'r') as f:
     symbol_library = json.load(f)
 
 ColoredGlyph = namedtuple('ColoredGlyph', ['path', 'color'])
