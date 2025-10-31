@@ -185,9 +185,9 @@ class GreedyEngine:
     '''
     Greedy clustering engine for motif clustering
     '''
-    def __init__(self, items: List[GreedyItem], pc: np.ndarray = np.ones(4),
-                 min_base_overlap: int = 4, min_information_overlap: float = 8.,
-                 max_information_overhang: float = 12., concentration: float = 1.):
+    def __init__(self, items: List[GreedyItem], pc: np.ndarray = np.array([2., 2., 2., 2.]),
+                 min_base_overlap: int = 4, min_information_overlap: float = 0.,
+                 max_information_overhang: float = 12., concentration: float = .5):
         self.items = items
         # Initialize all clusters as singletons
         self.clusters = [GreedyCluster(idx, [item], item.pfm.reshape(1, *item.pfm.shape), 0.,
