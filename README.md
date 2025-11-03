@@ -26,6 +26,10 @@ git clone https://github.com/CEGRcode/CLAMP.git
 Support on pypi/conda coming soon
 
 ### Running CLAMP
+Example command on simulated motifs:
+```
+python clamp-python/run_clamp.py --meme simulated_motifs/SIM-1.meme --output-dest simulated_motifs/SIM-1_results
+```
 CLAMP takes in a list of motifs using the MEME file format. This list can be inputted using `--meme`:
 ```
 python clamp-python/run_clamp.py --meme motif1.meme motif2.meme ... {other_args}
