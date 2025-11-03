@@ -43,6 +43,26 @@ The default output location is `./clamp_out`. This can be changed with `--output
 python clamp-python/run_clamp.py --output-dest new_clamp_out {other_args}
 ```
 
+### Flags
+ - `--meme`: Input MEME files
+ - `--meme-list`: TXT file with paths to input MEME files separated by newlines
+   - One of `--meme` or `--meme-list` is required
+ - `--nsites-thresh`: Motifs with nsites less than the passed in value will be filtered out
+ - `--evalue-thresh`: Motifs with E-value greater than the passed in value will be filtered out
+ - `--info-score-thresh`: Motifs with information score less than the passed in value will be filtered out
+ - `--periodicity1-thresh`: Motifs with periodicity score for period 1 greater than the passed in value will be filtered out
+ - `--periodicity2-thresh`: Motifs with periodicity score for period 2 greater than the passed in value will be filtered out
+ - `--periodicity3-thresh`: Motifs with periodicity score for period 3 greater than the passed in value will be filtered out
+ - `--pc`: Pseudocounts for prior Dirichlet background model
+ - `--min-base-overlap`: Minimum number of overlapping bases allowed for merging clusters
+ - `--min-information-overlap`: Minimum bit overlap dot product allowed for merging clusters
+ - `--max-information-overhang`: Maximum sum of absolute bit difference allowed for merging clusters
+ - `--concentration`: Concentration parameter (clustering score = BLLR * cluster_size ^ concentration)
+ - `--n-workers`: Number of worker threads (default is number of CPUs)
+ - `--trim-thresh`: Bases on the periphery of the consensus motif with information below the passed in value will be trimmed off
+ - `--get-sites`: Include to output bed files of union of binding sites for each cluster (input MEME files must include site information)
+ - `--output-dest`: Output directory
+
 ### Output
 CLAMP will create folders inside the folder specified by `--output-dest` with names formatted as `clusterX`. Each folder will contain three files:
 
