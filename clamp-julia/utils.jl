@@ -68,4 +68,8 @@ function trim_motif(aligned_pfms::Array{Float64, 3}; info_thresh::Float64 = .5,
     return pfm[start:end_, :], start - 1, size(pfm, 1) - end_, true
 end
 
+function xlogx(x::Real)::Float64
+    return x == 0. ? 0. : x * log(x)
+end
+
 end
